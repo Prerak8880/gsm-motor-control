@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GSM Motor Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        button { padding: 12px 24px; font-size: 16px; margin: 10px; border: none; border-radius: 4px; cursor: pointer; }
+        #onBtn { background-color: #4CAF50; color: white; }
+        #offBtn { background-color: #f44336; color: white; }
+        .status { margin: 20px; padding: 10px; font-weight: bold; }
+        .on { color: #4CAF50; }
+        .off { color: #f44336; }
+        .transition { color: #FFA500; }
+    </style>
+</head>
+<body>
+    <h1>GSM Motor Control</h1>
+    <div class="status">Current Status: <span id="statusText" class="off">DISCONNECTED</span></div>
+    <button id="onBtn" onclick="controlMotor('ON')">TURN ON</button>
+    <button id="offBtn" onclick="controlMotor('OFF')">TURN OFF</button>
+
+    <script>
+        const API_BASE_URL = "https://your-esp32-ip-address"; // Replace with your ESP32 IP
+        
+        function updateStatus(newStatus) {
+            const statusElem = document.getElementById('statusText');
+            statusElem.textContent = newStatus;
+            
+            if(newStatus === 'MOTOR ON') {
+                statusElem.className = 'on';
+            } else if(newStatus === 'MOTOR OFF') {
+                statusElem.className = 'off';
+            } else {
+                statusElem.className = 'transition';
+            }
+        }
+
+        async function controlMotor(cmd) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/control`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `command=${cmd}`
+                });
+                
+                const data = await response.json();
+                if(data.success) {
+                    updateStatus(data.status);
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch(error) {
+                console.error('Error:', error);
+                alert('Failed to communicate with device');
+            }
+        }
+
+        // Check status every 3 seconds
+        setInterval(async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/status`);
+                const data = await response.json();
+                updateStatus(data.status);
+            } catch(error) {
+                console.error('Status check error:', error);
+                updateStatus('DISCONNECTED');
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
